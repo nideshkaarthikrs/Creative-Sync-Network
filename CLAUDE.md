@@ -14,6 +14,7 @@
 | chat-service | 3008 | Done |
 | voting-service | 3009 | Done |
 | feed-service | 3010 | Done |
+| rights-service | 3011 | Done |
 
 ## In-Progress Services
 
@@ -23,7 +24,6 @@ None.
 
 | Service | Port |
 |---|---|
-| rights-service | 3011 |
 | payment-service | 3012 |
 
 ## Conventions & Patterns Established
@@ -102,6 +102,7 @@ Each service runs its own PostgreSQL container on a unique host port:
 - chat-service: 5439
 - voting-service: 5440
 - feed-service: 5441
+- rights-service: 5442
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -262,9 +263,38 @@ npm run start:dev             # start on port 3010
 # no prisma migrate needed — schema has no models
 ```
 
+### LicenseId format
+- `listingId` in responses = `"LIC" + (8000 + sequenceNumber)` → e.g. `LIC8001`, `LIC8002`
+- Path params not needed (listings queried by assetId, not listingId)
+
+### ClaimId format
+- `claimId` in responses = `"CLM" + (9000 + sequenceNumber)` → e.g. `CLM9001`, `CLM9002`
+- Path params use the display ID; service parses: strip `CLM`, parseInt, subtract 9000, query by `sequenceNumber`
+
+### rights-service controller layout
+Three controllers in one `RightsModule`:
+- `MarketplaceController` (`/marketplace`) — JWT required:
+  - `GET /marketplace/rights` — paginated listings (`?type=TUNE|SONG|VIDEO`, `?page=1&pageSize=20`)
+  - `POST /marketplace/purchase` — body `{ assetId, licenseType }`; creates Purchase record + marks listing PENDING
+- `DrmController` (`/drm`) — JWT required:
+  - `POST /drm/token` — body `{ assetId }`; stateless stub; returns `{ streamUrl: "https://cdn.csn.ai/stream/:assetId?token=<uuid>" }`
+- `CopyrightController` (`/copyright`) — JWT required:
+  - `POST /copyright/claims` — body `{ assetId, reason }`; creates CopyrightClaim with PENDING status
+  - `GET /copyright/claims/:claimId` — returns claim detail; 404 `CSN-RIGHTS-001` if not found
+- Three Prisma models: `RightsListing`, `Purchase`, `CopyrightClaim`
+- DRM token generation is stateless (`randomUUID()` from Node crypto); token not persisted (MVP stub)
+
+### Local development (rights-service)
+```bash
+cd csn-backend/rights-service
+docker compose up -d          # start PostgreSQL on port 5442
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3011
+```
+
 ## What to Build Next
 
-**rights-service (port 3011)** — licensing, DRM, copyright claims: `GET /marketplace/rights`, `POST /marketplace/purchase`, `POST /drm/token`, `POST /copyright/claims`, `GET /copyright/claims/:claimId`.
+**payment-service (port 3012)** — subscriptions, payment webhook, revenue dashboard, withdraw: `POST /subscriptions`, `POST /payments/webhook`, `GET /revenues/dashboard`, `POST /revenues/withdraw`.
 
 ## ---- DON'T EDIT THIS PART ----
 ### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
