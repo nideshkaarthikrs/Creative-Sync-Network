@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -39,10 +40,13 @@ export class TuneController {
     }),
   )
   create(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File | undefined,
     @Body() dto: CreateTuneDto,
     @Request() req,
   ) {
+    if (!file) {
+      throw new BadRequestException({ status: 'ERROR', errorCode: 'CSN-3003', message: 'Audio file is required' });
+    }
     return this.tuneService.create(req.user.userId, dto, file.filename);
   }
 

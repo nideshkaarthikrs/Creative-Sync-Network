@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -42,6 +43,9 @@ export class PerformanceController {
     @Body() dto: CreatePerformanceDto,
     @Request() req,
   ) {
+    if (!file) {
+      throw new BadRequestException({ status: 'ERROR', errorCode: 'CSN-VOICE-001', message: 'Audio file is required' });
+    }
     return this.performanceService.upload(req.user.userId, dto, file.filename);
   }
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -50,6 +51,9 @@ export class VideoController {
     }),
   )
   upload(@UploadedFile() file: Express.Multer.File, @Request() req) {
+    if (!file) {
+      throw new BadRequestException({ status: 'ERROR', errorCode: 'CSN-VIDEO-001', message: 'Video file is required' });
+    }
     return this.videoService.uploadVideo(req.user.id, req.user.userId, file.filename);
   }
 

@@ -19,6 +19,4 @@ export class CreateTuneDto {
   @IsInt()
   bpm?: number;
 
-  @IsOptional()
-  audio?: any;
 }
