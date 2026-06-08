@@ -10,6 +10,8 @@
 | lyrics-service | 3004 | Done |
 | voice-service | 3005 | Done |
 | video-service | 3006 | Done |
+| project-service | 3007 | Done |
+| chat-service | 3008 | Done |
 
 ## In-Progress Services
 
@@ -19,8 +21,6 @@ None.
 
 | Service | Port |
 |---|---|
-| project-service | 3007 |
-| chat-service | 3008 |
 | voting-service | 3009 |
 | feed-service | 3010 |
 | rights-service | 3011 |
@@ -98,6 +98,8 @@ Each service runs its own PostgreSQL container on a unique host port:
 - lyrics-service: 5435
 - voice-service: 5436
 - video-service: 5437
+- project-service: 5438
+- chat-service: 5439
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -184,9 +186,46 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3006
 ```
 
+### ProjectId format
+- `projectId` in responses = `"PRJ" + (5000 + sequenceNumber)` → e.g. `PRJ5001`, `PRJ5002`
+- Path params use the display ID; service parses: strip `PRJ`, parseInt, subtract 5000, query by `sequenceNumber`
+
+### MessageId format
+- `messageId` in responses = `"MSG" + (6000 + sequenceNumber)` → e.g. `MSG6001`, `MSG6002`
+- Path params use the display ID; service parses: strip `MSG`, parseInt, subtract 6000, query by `sequenceNumber`
+
+### project-service controller layout
+Single `ProjectController` at `/projects`:
+- `POST /projects` — create project (JWT required)
+- `POST /projects/:projectId/invite` — invite collaborator (JWT required; owner check in service layer)
+- `GET /projects/:projectId/members` — list project members (JWT required)
+- `GET /projects/:projectId/files` — list project files (JWT required; stub — returns `[]`)
+
+### chat-service controller layout
+Single `MessageController` at `/projects`:
+- `POST /projects/:projectId/messages` — send message (JWT required)
+- `GET /projects/:projectId/messages` — paginated message history (JWT required)
+- `projectId` stored as a string reference (no cross-service FK validation at MVP)
+
+### Local development (project-service)
+```bash
+cd csn-backend/project-service
+docker compose up -d          # start PostgreSQL on port 5438
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3007
+```
+
+### Local development (chat-service)
+```bash
+cd csn-backend/chat-service
+docker compose up -d          # start PostgreSQL on port 5439
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3008
+```
+
 ## What to Build Next
 
-**project-service (port 3007) + chat-service (port 3008)** — collaboration workspace and messaging: `POST /projects`, `POST /projects/:projectId/invite`, `GET /projects/:projectId/members`, `GET /projects/:projectId/files`, `POST /projects/:projectId/messages`, `GET /projects/:projectId/messages`.
+**voting-service (port 3009)** — community voting: `POST /votes`, `GET /votes/results/:entityId`.
 
 ## ---- DON'T EDIT THIS PART ----
 ### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
