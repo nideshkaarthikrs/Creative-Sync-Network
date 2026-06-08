@@ -12,6 +12,7 @@
 | video-service | 3006 | Done |
 | project-service | 3007 | Done |
 | chat-service | 3008 | Done |
+| voting-service | 3009 | Done |
 
 ## In-Progress Services
 
@@ -21,7 +22,6 @@ None.
 
 | Service | Port |
 |---|---|
-| voting-service | 3009 |
 | feed-service | 3010 |
 | rights-service | 3011 |
 | payment-service | 3012 |
@@ -223,9 +223,30 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3008
 ```
 
+### VoteId format
+- `voteId` in responses = `"VOT" + (7000 + sequenceNumber)` → e.g. `VOT7001`, `VOT7002`
+- No path-param parsing needed (votes are cast by body; results queried by entityId, not voteId)
+
+### voting-service controller layout
+Single `VoteController` at `/votes`:
+- `POST /votes` — cast a vote (JWT required); body `{ entityType, entityId }`
+- `GET /votes/results/:entityId` — get vote count + rank (JWT required)
+- One-vote-per-user enforced by DB unique constraint `(voterId, entityId, entityType)`; P2002 → 409 `CSN-VOTE-001`
+- Account-age check (< 7 days) deferred — `registeredAt` not in JWT at MVP
+- IP-based rate limiting deferred — no Redis infrastructure at MVP
+- Rank = 1 + count of distinct entityIds of same entityType with a higher vote count
+
+### Local development (voting-service)
+```bash
+cd csn-backend/voting-service
+docker compose up -d          # start PostgreSQL on port 5440
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3009
+```
+
 ## What to Build Next
 
-**voting-service (port 3009)** — community voting: `POST /votes`, `GET /votes/results/:entityId`.
+**feed-service (port 3010)** — home feed, trending, recommended: `GET /feed/home`, `GET /feed/trending`, `GET /feed/recommended`.
 
 ## ---- DON'T EDIT THIS PART ----
 ### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
