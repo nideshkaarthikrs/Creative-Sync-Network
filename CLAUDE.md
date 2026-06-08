@@ -318,6 +318,16 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3012
 ```
 
+### JWT_SECRET alignment requirement
+All service `.env` files must use the **same** `JWT_SECRET` value as identity-service. The `.env.example` templates ship with a placeholder (`your-jwt-secret-change-in-production`) which is **not** the real dev secret — replace it when creating a new service `.env`. If a service keeps returning 401 on valid tokens, a mismatched JWT_SECRET is the first thing to check.
+
+### Smoke test
+A local script `smoke-test.sh` (project root, **not committed**) exercises all 44 endpoints across all 12 services in workflow order (register → login → tune → lyrics → performance → video → project → chat → vote → feed → rights → payment → logout). It chains IDs between services, checks PASS/FAIL per endpoint, and exits 1 if anything fails. Run it with all 12 services up to verify the full integration:
+```bash
+./smoke-test.sh
+```
+Notes: each run registers a fresh user (unique email + mobile derived from `date +%s`). Idempotent — safe to run repeatedly.
+
 ## What to Build Next
 
 All services in the MVP build order are complete. No pending services remain.
