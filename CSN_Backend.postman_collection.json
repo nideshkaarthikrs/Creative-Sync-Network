@@ -1,0 +1,1526 @@
+{
+  "info": {
+    "name": "CSN Backend — E2E Smoke Tests",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "description": "44 requests covering all 12 CSN backend services in workflow order.\nRun with Collection Runner — the Register request auto-generates a unique email/mobile per run, and IDs chain automatically via test scripts.\nRequires all services running on ports 3001–3012.\nNo separate environment needed; all variables are collection-scoped.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "id_svc",         "value": "http://localhost:3001", "type": "string" },
+    { "key": "pr_svc",         "value": "http://localhost:3002", "type": "string" },
+    { "key": "tn_svc",         "value": "http://localhost:3003", "type": "string" },
+    { "key": "ly_svc",         "value": "http://localhost:3004", "type": "string" },
+    { "key": "vo_svc",         "value": "http://localhost:3005", "type": "string" },
+    { "key": "vi_svc",         "value": "http://localhost:3006", "type": "string" },
+    { "key": "pj_svc",         "value": "http://localhost:3007", "type": "string" },
+    { "key": "ch_svc",         "value": "http://localhost:3008", "type": "string" },
+    { "key": "vt_svc",         "value": "http://localhost:3009", "type": "string" },
+    { "key": "fd_svc",         "value": "http://localhost:3010", "type": "string" },
+    { "key": "ri_svc",         "value": "http://localhost:3011", "type": "string" },
+    { "key": "pa_svc",         "value": "http://localhost:3012", "type": "string" },
+    { "key": "password",       "value": "Smoke1234!",             "type": "string" },
+    { "key": "email",          "value": "",                        "type": "string" },
+    { "key": "mobile",         "value": "",                        "type": "string" },
+    { "key": "token",          "value": "",                        "type": "string" },
+    { "key": "refreshToken",   "value": "",                        "type": "string" },
+    { "key": "userId",         "value": "",                        "type": "string" },
+    { "key": "tuneId",         "value": "",                        "type": "string" },
+    { "key": "lyricsId",       "value": "",                        "type": "string" },
+    { "key": "perfId",         "value": "",                        "type": "string" },
+    { "key": "videoId",        "value": "",                        "type": "string" },
+    { "key": "videoProjectId", "value": "",                        "type": "string" },
+    { "key": "prjId",          "value": "",                        "type": "string" },
+    { "key": "claimId",        "value": "",                        "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "1. Identity Service (3001)",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Math.floor(Date.now() / 1000);",
+                  "pm.collectionVariables.set('email', 'smoke_' + ts + '@csn.test');",
+                  "pm.collectionVariables.set('mobile', '+91' + String(ts).slice(-9));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('userId present', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.userId).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('userId', json.userId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Smoke Tester\",\n  \"email\": \"{{email}}\",\n  \"mobile\": \"{{mobile}}\",\n  \"password\": \"{{password}}\",\n  \"roles\": [\"COMPOSER\", \"SINGER\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{id_svc}}/auth/register",
+              "host": ["{{id_svc}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('token present', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{id_svc}}/auth/login",
+              "host": ["{{id_svc}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /auth/refresh-token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('token present', () => pm.expect(pm.response.json().token).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{id_svc}}/auth/refresh-token",
+              "host": ["{{id_svc}}"],
+              "path": ["auth", "refresh-token"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "2. Profile Service (3002)",
+      "item": [
+        {
+          "name": "GET /profiles/:userId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{pr_svc}}/profiles/{{userId}}",
+              "host": ["{{pr_svc}}"],
+              "path": ["profiles", "{{userId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "3. Tune Service (3003)",
+      "item": [
+        {
+          "name": "POST /tunes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('tuneId present', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.tuneId).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('tuneId', json.tuneId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title",    "value": "Smoke Melody", "type": "text" },
+                { "key": "genre",    "value": "ROMANTIC",     "type": "text" },
+                { "key": "language", "value": "TAMIL",        "type": "text" },
+                { "key": "mood",     "value": "SOFT",         "type": "text" },
+                { "key": "bpm",      "value": "80",           "type": "text" },
+                { "key": "audio",    "type": "file",          "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{tn_svc}}/tunes",
+              "host": ["{{tn_svc}}"],
+              "path": ["tunes"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /tunes/my",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{tn_svc}}/tunes/my",
+              "host": ["{{tn_svc}}"],
+              "path": ["tunes", "my"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /tunes/:tuneId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{tn_svc}}/tunes/{{tuneId}}",
+              "host": ["{{tn_svc}}"],
+              "path": ["tunes", "{{tuneId}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /tunes/:tuneId/analyze",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{tn_svc}}/tunes/{{tuneId}}/analyze",
+              "host": ["{{tn_svc}}"],
+              "path": ["tunes", "{{tuneId}}", "analyze"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "4. Lyrics Service (3004)",
+      "item": [
+        {
+          "name": "POST /lyrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('lyricsId present', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.lyricsId).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('lyricsId', json.lyricsId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization",  "value": "Bearer {{token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tuneId\": \"{{tuneId}}\",\n  \"title\": \"Kadhal Mazhai\",\n  \"language\": \"Tamil\",\n  \"lyrics\": \"Mazhai mazhai kaadhal mazhai...\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ly_svc}}/lyrics",
+              "host": ["{{ly_svc}}"],
+              "path": ["lyrics"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /tunes/:tuneId/lyrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ly_svc}}/tunes/{{tuneId}}/lyrics",
+              "host": ["{{ly_svc}}"],
+              "path": ["tunes", "{{tuneId}}", "lyrics"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /lyrics/:lyricsId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ly_svc}}/lyrics/{{lyricsId}}",
+              "host": ["{{ly_svc}}"],
+              "path": ["lyrics", "{{lyricsId}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "PUT /lyrics/:lyricsId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kadhal Mazhai (Updated)\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ly_svc}}/lyrics/{{lyricsId}}",
+              "host": ["{{ly_svc}}"],
+              "path": ["lyrics", "{{lyricsId}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /lyrics/:lyricsId/approve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ly_svc}}/lyrics/{{lyricsId}}/approve",
+              "host": ["{{ly_svc}}"],
+              "path": ["lyrics", "{{lyricsId}}", "approve"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /ai/lyrics/generate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('versions present', () => {",
+                  "  const json = pm.response.json();",
+                  "  const hasVersions = json.versions !== undefined || (json.data && json.data.versions !== undefined);",
+                  "  pm.expect(hasVersions).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tuneId\": \"{{tuneId}}\",\n  \"language\": \"Tamil\",\n  \"theme\": \"Romantic\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ly_svc}}/ai/lyrics/generate",
+              "host": ["{{ly_svc}}"],
+              "path": ["ai", "lyrics", "generate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "5. Voice Service (3005)",
+      "item": [
+        {
+          "name": "POST /performances",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('performanceId present', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.performanceId).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('perfId', json.performanceId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "tuneId",   "value": "{{tuneId}}",   "type": "text" },
+                { "key": "lyricsId", "value": "{{lyricsId}}", "type": "text" },
+                { "key": "file",     "type": "file",           "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{vo_svc}}/performances",
+              "host": ["{{vo_svc}}"],
+              "path": ["performances"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /performances/my",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{vo_svc}}/performances/my",
+              "host": ["{{vo_svc}}"],
+              "path": ["performances", "my"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /performances/:performanceId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{vo_svc}}/performances/{{perfId}}",
+              "host": ["{{vo_svc}}"],
+              "path": ["performances", "{{perfId}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /performances/:performanceId/analyze",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('pitch present', () => {",
+                  "  const json = pm.response.json();",
+                  "  const hasPitch = json.pitch !== undefined || (json.data && json.data.pitch !== undefined);",
+                  "  pm.expect(hasPitch).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{vo_svc}}/performances/{{perfId}}/analyze",
+              "host": ["{{vo_svc}}"],
+              "path": ["performances", "{{perfId}}", "analyze"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "6. Video Service (3006)",
+      "item": [
+        {
+          "name": "POST /video-projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('SUCCESS');",
+                  "  pm.collectionVariables.set('videoProjectId', json.data.videoProjectId || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"songId\": \"SONG1001\",\n  \"title\": \"Smoke Test Video\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{vi_svc}}/video-projects",
+              "host": ["{{vi_svc}}"],
+              "path": ["video-projects"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /videos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('SUCCESS');",
+                  "  pm.collectionVariables.set('videoId', json.data.videoId || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{vi_svc}}/videos",
+              "host": ["{{vi_svc}}"],
+              "path": ["videos"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /videos/:videoId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{vi_svc}}/videos/{{videoId}}",
+              "host": ["{{vi_svc}}"],
+              "path": ["videos", "{{videoId}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /ai/storyboards",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"songId\": \"SONG1001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{vi_svc}}/ai/storyboards",
+              "host": ["{{vi_svc}}"],
+              "path": ["ai", "storyboards"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "7. Project Service (3007)",
+      "item": [
+        {
+          "name": "POST /projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('SUCCESS');",
+                  "  pm.collectionVariables.set('prjId', json.data.projectId || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"Smoke Test Project\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pj_svc}}/projects",
+              "host": ["{{pj_svc}}"],
+              "path": ["projects"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /projects/:projectId/invite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR100002\",\n  \"role\": \"SINGER\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pj_svc}}/projects/{{prjId}}/invite",
+              "host": ["{{pj_svc}}"],
+              "path": ["projects", "{{prjId}}", "invite"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /projects/:projectId/members",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{pj_svc}}/projects/{{prjId}}/members",
+              "host": ["{{pj_svc}}"],
+              "path": ["projects", "{{prjId}}", "members"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /projects/:projectId/files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{pj_svc}}/projects/{{prjId}}/files",
+              "host": ["{{pj_svc}}"],
+              "path": ["projects", "{{prjId}}", "files"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "8. Chat Service (3008)",
+      "item": [
+        {
+          "name": "POST /projects/:projectId/messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Please review version 2\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ch_svc}}/projects/{{prjId}}/messages",
+              "host": ["{{ch_svc}}"],
+              "path": ["projects", "{{prjId}}", "messages"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /projects/:projectId/messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ch_svc}}/projects/{{prjId}}/messages",
+              "host": ["{{ch_svc}}"],
+              "path": ["projects", "{{prjId}}", "messages"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "9. Voting Service (3009)",
+      "item": [
+        {
+          "name": "POST /votes (first cast)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entityType\": \"LYRICS\",\n  \"entityId\": \"{{lyricsId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{vt_svc}}/votes",
+              "host": ["{{vt_svc}}"],
+              "path": ["votes"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /votes (duplicate → 409 CSN-VOTE-001)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.expect(pm.response.code).to.eql(409));",
+                  "pm.test('errorCode CSN-VOTE-001', () => pm.expect(pm.response.json().errorCode).to.eql('CSN-VOTE-001'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entityType\": \"LYRICS\",\n  \"entityId\": \"{{lyricsId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{vt_svc}}/votes",
+              "host": ["{{vt_svc}}"],
+              "path": ["votes"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /votes/results/:entityId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{vt_svc}}/votes/results/{{lyricsId}}",
+              "host": ["{{vt_svc}}"],
+              "path": ["votes", "results", "{{lyricsId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "10. Feed Service (3010)",
+      "item": [
+        {
+          "name": "GET /feed/home",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{fd_svc}}/feed/home",
+              "host": ["{{fd_svc}}"],
+              "path": ["feed", "home"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /feed/trending",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{fd_svc}}/feed/trending",
+              "host": ["{{fd_svc}}"],
+              "path": ["feed", "trending"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /feed/recommended",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{fd_svc}}/feed/recommended",
+              "host": ["{{fd_svc}}"],
+              "path": ["feed", "recommended"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "11. Rights Service (3011)",
+      "item": [
+        {
+          "name": "GET /marketplace/rights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ri_svc}}/marketplace/rights",
+              "host": ["{{ri_svc}}"],
+              "path": ["marketplace", "rights"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /marketplace/purchase",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{tuneId}}\",\n  \"licenseType\": \"NON_EXCLUSIVE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ri_svc}}/marketplace/purchase",
+              "host": ["{{ri_svc}}"],
+              "path": ["marketplace", "purchase"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /drm/token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{videoId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ri_svc}}/drm/token",
+              "host": ["{{ri_svc}}"],
+              "path": ["drm", "token"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /copyright/claims",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('SUCCESS');",
+                  "  pm.collectionVariables.set('claimId', json.data.claimId || '');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{tuneId}}\",\n  \"reason\": \"Test copyright claim\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{ri_svc}}/copyright/claims",
+              "host": ["{{ri_svc}}"],
+              "path": ["copyright", "claims"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /copyright/claims/:claimId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{ri_svc}}/copyright/claims/{{claimId}}",
+              "host": ["{{ri_svc}}"],
+              "path": ["copyright", "claims", "{{claimId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "12. Payment Service (3012)",
+      "item": [
+        {
+          "name": "POST /subscriptions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"PREMIUM\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pa_svc}}/subscriptions",
+              "host": ["{{pa_svc}}"],
+              "path": ["subscriptions"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /payments/webhook (no auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"payment.success\",\n  \"payload\": {\n    \"amount\": 499,\n    \"plan\": \"PREMIUM\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pa_svc}}/payments/webhook",
+              "host": ["{{pa_svc}}"],
+              "path": ["payments", "webhook"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET /revenues/dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{pa_svc}}/revenues/dashboard",
+              "host": ["{{pa_svc}}"],
+              "path": ["revenues", "dashboard"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST /revenues/withdraw",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500,\n  \"bankAccountId\": \"BANK001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{pa_svc}}/revenues/withdraw",
+              "host": ["{{pa_svc}}"],
+              "path": ["revenues", "withdraw"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+
+    {
+      "name": "13. Identity Service — Logout (3001)",
+      "item": [
+        {
+          "name": "POST /auth/logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 2xx', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "pm.test('status SUCCESS', () => pm.expect(pm.response.json().status).to.eql('SUCCESS'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{id_svc}}/auth/logout",
+              "host": ["{{id_svc}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+
+  ]
+}
