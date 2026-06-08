@@ -6,6 +6,7 @@
 |---|---|---|
 | identity-service | 3001 | Done |
 | profile-service | 3002 | Done |
+| tune-service | 3003 | Done |
 
 ## In-Progress Services
 
@@ -15,7 +16,6 @@ None.
 
 | Service | Port |
 |---|---|
-| tune-service | 3003 |
 | lyrics-service | 3004 |
 | voice-service | 3005 |
 | video-service | 3006 |
@@ -94,6 +94,7 @@ Profile-service auto-creates a `Profile` record on the first `GET /profiles/:use
 Each service runs its own PostgreSQL container on a unique host port:
 - identity-service: 5432
 - profile-service: 5433
+- tune-service: 5434
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -116,13 +117,20 @@ npm run start:dev             # start on port 3002
 
 - **OTP (mobile verification)**: Mentioned in context PDF but not in REST API contracts. Not built. Needs contract before implementation.
 - **Social OAuth (Google login)**: Mentioned in context PDF but not in REST API contracts. Not built. Needs contract before implementation.
-- **Photo storage**: profile-service currently uses multer disk storage (`uploads/`) as a placeholder. Real implementation needs AWS S3 + CDN URL. Flag when building tune-service (which also needs S3).
+- **Photo storage**: profile-service and tune-service currently use multer disk storage (`uploads/`) as a placeholder. Real implementation needs AWS S3 + CDN URL.
+
+### TuneId format
+- `tuneId` in responses = `"TUN" + (1000 + sequenceNumber)` → e.g. `TUN1001`, `TUN1002`
+- Path params use the display ID; service parses: strip `TUN`, parseInt, subtract 1000, query by `sequenceNumber`
+
+### Local development (tune-service)
+```bash
+cd csn-backend/tune-service
+docker compose up -d          # start PostgreSQL on port 5434
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3003
+```
 
 ## What to Build Next
 
-**tune-service (port 3003)** — endpoints:
-- `POST /tunes` (multipart — audio file + metadata)
-- `GET /tunes/my`
-- `GET /tunes/{tuneId}`
-- `DELETE /tunes/{tuneId}`
-- `POST /tunes/{tuneId}/analyze` (AI stub)
+**lyrics-service (port 3004)** — endpoints TBD from REST API contracts.
