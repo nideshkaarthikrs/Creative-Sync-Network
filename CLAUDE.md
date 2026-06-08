@@ -9,6 +9,7 @@
 | tune-service | 3003 | Done |
 | lyrics-service | 3004 | Done |
 | voice-service | 3005 | Done |
+| video-service | 3006 | Done |
 
 ## In-Progress Services
 
@@ -18,7 +19,6 @@ None.
 
 | Service | Port |
 |---|---|
-| video-service | 3006 |
 | project-service | 3007 |
 | chat-service | 3008 |
 | voting-service | 3009 |
@@ -97,6 +97,7 @@ Each service runs its own PostgreSQL container on a unique host port:
 - tune-service: 5434
 - lyrics-service: 5435
 - voice-service: 5436
+- video-service: 5437
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -160,6 +161,33 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3005
 ```
 
+### VideoId format
+- `videoId` in responses = `"VID" + (1000 + sequenceNumber)` → e.g. `VID1001`, `VID1002`
+- Matches the `VID1001` example in the DRM contract (section 22)
+- Path params use the display ID; service parses: strip `VID`, parseInt, subtract 1000, query by `sequenceNumber`
+
+### VideoProjectId format
+- `videoProjectId` in responses = `"VPR" + (4000 + sequenceNumber)` → e.g. `VPR4001`, `VPR4002`
+- Path params use the display ID; service parses: strip `VPR`, parseInt, subtract 4000, query by `sequenceNumber`
+
+### video-service controller layout
+video-service has three controllers in one file (`video.controller.ts`) under a single `VideoModule`:
+- `VideoProjectController` (`/video-projects`) — `POST /video-projects`
+- `VideoController` (`/videos`) — `POST /videos` (multipart), `GET /videos/:videoId`
+- `AiController` (`/ai`) — `POST /ai/storyboards` (stub)
+
+### Local development (video-service)
+```bash
+cd csn-backend/video-service
+docker compose up -d          # start PostgreSQL on port 5437
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3006
+```
+
 ## What to Build Next
 
 **project-service (port 3007) + chat-service (port 3008)** — collaboration workspace and messaging: `POST /projects`, `POST /projects/:projectId/invite`, `GET /projects/:projectId/members`, `GET /projects/:projectId/files`, `POST /projects/:projectId/messages`, `GET /projects/:projectId/messages`.
+
+## ---- DON'T EDIT THIS PART ----
+### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
+From now on, keep `CLAUDE.md` continuously updated — every time a meaningful decision is made, a service is completed, a convention is established, or a pending issue is identified, update `CLAUDE.md` immediately without waiting for me to ask. After every service completion, stage all changes, verify with git diff --staged that only files belonging to the current service are included in the commit, and push to GitHub with a meaningful commit message. Never bundle files from other services into a commit — if unrelated files show up in the diff, unstage them before committing. Clean, traceable commits per service, every time.
