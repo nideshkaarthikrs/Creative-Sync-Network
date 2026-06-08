@@ -7,6 +7,8 @@
 | identity-service | 3001 | Done |
 | profile-service | 3002 | Done |
 | tune-service | 3003 | Done |
+| lyrics-service | 3004 | Done |
+| voice-service | 3005 | Done |
 
 ## In-Progress Services
 
@@ -16,8 +18,6 @@ None.
 
 | Service | Port |
 |---|---|
-| lyrics-service | 3004 |
-| voice-service | 3005 |
 | video-service | 3006 |
 | project-service | 3007 |
 | chat-service | 3008 |
@@ -95,6 +95,8 @@ Each service runs its own PostgreSQL container on a unique host port:
 - identity-service: 5432
 - profile-service: 5433
 - tune-service: 5434
+- lyrics-service: 5435
+- voice-service: 5436
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -123,6 +125,13 @@ npm run start:dev             # start on port 3002
 - `tuneId` in responses = `"TUN" + (1000 + sequenceNumber)` → e.g. `TUN1001`, `TUN1002`
 - Path params use the display ID; service parses: strip `TUN`, parseInt, subtract 1000, query by `sequenceNumber`
 
+### LyricsId format
+- `lyricsId` in responses = `"LYR" + (2000 + sequenceNumber)` → e.g. `LYR2001`, `LYR2002`
+- Path params use the display ID; service parses: strip `LYR`, parseInt, subtract 2000, query by `sequenceNumber`
+
+### Approve endpoint auth pattern (MVP)
+lyrics-service `POST /lyrics/:lyricsId/approve` gates on `COMPOSER` role from JWT. Full cross-service ownership check (confirm caller owns the tune) is deferred — would require an HTTP call to tune-service.
+
 ### Local development (tune-service)
 ```bash
 cd csn-backend/tune-service
@@ -131,6 +140,26 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3003
 ```
 
+### Local development (lyrics-service)
+```bash
+cd csn-backend/lyrics-service
+docker compose up -d          # start PostgreSQL on port 5435
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3004
+```
+
+### PerformanceId format
+- `performanceId` in responses = `"PER" + (3000 + sequenceNumber)` → e.g. `PER3001`, `PER3002`
+- Path params use the display ID; service parses: strip `PER`, parseInt, subtract 3000, query by `sequenceNumber`
+
+### Local development (voice-service)
+```bash
+cd csn-backend/voice-service
+docker compose up -d          # start PostgreSQL on port 5436
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3005
+```
+
 ## What to Build Next
 
-**lyrics-service (port 3004)** — endpoints TBD from REST API contracts.
+**project-service (port 3007) + chat-service (port 3008)** — collaboration workspace and messaging: `POST /projects`, `POST /projects/:projectId/invite`, `GET /projects/:projectId/members`, `GET /projects/:projectId/files`, `POST /projects/:projectId/messages`, `GET /projects/:projectId/messages`.
