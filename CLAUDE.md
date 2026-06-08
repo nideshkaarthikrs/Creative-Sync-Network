@@ -13,6 +13,7 @@
 | project-service | 3007 | Done |
 | chat-service | 3008 | Done |
 | voting-service | 3009 | Done |
+| feed-service | 3010 | Done |
 
 ## In-Progress Services
 
@@ -22,7 +23,6 @@ None.
 
 | Service | Port |
 |---|---|
-| feed-service | 3010 |
 | rights-service | 3011 |
 | payment-service | 3012 |
 
@@ -100,6 +100,8 @@ Each service runs its own PostgreSQL container on a unique host port:
 - video-service: 5437
 - project-service: 5438
 - chat-service: 5439
+- voting-service: 5440
+- feed-service: 5441
 - (next services increment by 1)
 
 ### Local development (identity-service)
@@ -244,9 +246,25 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3009
 ```
 
+### feed-service controller layout
+Single `FeedController` at `/feed` — all three endpoints require JWT:
+- `GET /feed/home` — home feed (paginated stub, `?page=1&pageSize=20`)
+- `GET /feed/trending` — trending content (paginated stub)
+- `GET /feed/recommended` — recommended content (paginated stub)
+- No DB writes at MVP; `PrismaService` omitted; schema has datasource + generator only (no models)
+- Full implementation would consume events from all upstream services
+
+### Local development (feed-service)
+```bash
+cd csn-backend/feed-service
+docker compose up -d          # start PostgreSQL on port 5441
+npm run start:dev             # start on port 3010
+# no prisma migrate needed — schema has no models
+```
+
 ## What to Build Next
 
-**feed-service (port 3010)** — home feed, trending, recommended: `GET /feed/home`, `GET /feed/trending`, `GET /feed/recommended`.
+**rights-service (port 3011)** — licensing, DRM, copyright claims: `GET /marketplace/rights`, `POST /marketplace/purchase`, `POST /drm/token`, `POST /copyright/claims`, `GET /copyright/claims/:claimId`.
 
 ## ---- DON'T EDIT THIS PART ----
 ### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
