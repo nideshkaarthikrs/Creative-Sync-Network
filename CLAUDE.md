@@ -15,6 +15,7 @@
 | voting-service | 3009 | Done |
 | feed-service | 3010 | Done |
 | rights-service | 3011 | Done |
+| payment-service | 3012 | Done |
 
 ## In-Progress Services
 
@@ -22,9 +23,7 @@ None.
 
 ## Pending Services
 
-| Service | Port |
-|---|---|
-| payment-service | 3012 |
+None.
 
 ## Conventions & Patterns Established
 
@@ -103,7 +102,7 @@ Each service runs its own PostgreSQL container on a unique host port:
 - voting-service: 5440
 - feed-service: 5441
 - rights-service: 5442
-- (next services increment by 1)
+- payment-service: 5443
 
 ### Local development (identity-service)
 ```bash
@@ -292,9 +291,36 @@ npx prisma migrate dev        # run migrations
 npm run start:dev             # start on port 3011
 ```
 
+### SubscriptionId format
+- `subscriptionId` in responses = `"SUB" + (10000 + sequenceNumber)` → e.g. `SUB10001`, `SUB10002`
+- No path-param parsing needed (subscriptions referenced by owner userId at MVP)
+
+### WithdrawalId format
+- `withdrawalId` in responses = `"WDR" + (11000 + sequenceNumber)` → e.g. `WDR11001`, `WDR11002`
+- No path-param parsing needed (withdrawals created by owner; no GET by withdrawalId at MVP)
+
+### payment-service controller layout
+Three controllers in one `PaymentModule`:
+- `SubscriptionController` (`/subscriptions`) — JWT required:
+  - `POST /subscriptions` — body `{ plan: FREE|PREMIUM|PRODUCER }`; creates Subscription; plan→amount map: FREE=0, PREMIUM=499, PRODUCER=10000
+- `WebhookController` (`/payments`) — **no auth** (payment gateways don't send JWTs):
+  - `POST /payments/webhook` — body `{ eventType, payload }`; persists WebhookEvent; returns standard success envelope
+- `RevenueController` (`/revenues`) — JWT required:
+  - `GET /revenues/dashboard` — stub returning `{ totalRevenue:0, royalties:0, marketplaceSales:0, contestWins:0 }` (no cross-service aggregation at MVP)
+  - `POST /revenues/withdraw` — body `{ amount, bankAccountId }`; creates WithdrawalRequest with PENDING status
+- Three Prisma models: `Subscription`, `WebhookEvent`, `WithdrawalRequest`
+
+### Local development (payment-service)
+```bash
+cd csn-backend/payment-service
+docker compose up -d          # start PostgreSQL on port 5443
+npx prisma migrate dev        # run migrations
+npm run start:dev             # start on port 3012
+```
+
 ## What to Build Next
 
-**payment-service (port 3012)** — subscriptions, payment webhook, revenue dashboard, withdraw: `POST /subscriptions`, `POST /payments/webhook`, `GET /revenues/dashboard`, `POST /revenues/withdraw`.
+All services in the MVP build order are complete. No pending services remain.
 
 ## ---- DON'T EDIT THIS PART ----
 ### THINGS TO BE DONE AUTOMATICALLY AFTER COMPLETION OF EVERY FEATURE:
